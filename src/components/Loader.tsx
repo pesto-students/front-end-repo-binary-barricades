@@ -1,5 +1,7 @@
-import { COLORS } from "@/app/colors";
+"use client";
 import { Box, Spinner } from "@chakra-ui/react";
+import React from "react";
+import { COLORS } from "../app/colors";
 
 const LoadingBackdrop = () => {
   return (

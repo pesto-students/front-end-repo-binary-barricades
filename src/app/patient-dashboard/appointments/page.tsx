@@ -3,6 +3,7 @@ import AppointmentCard from "@/components/AppointmentCard";
 import { CTX } from "@/context/context";
 import {
   Box,
+  HStack,
   Tab,
   TabList,
   TabPanel,
@@ -29,6 +30,8 @@ import { getMedicationsByAppointmentIdAction } from "@/store/actions/patient/med
 import { updateVitalsAction } from "@/store/actions/patient/vitalActions";
 import AppointmentModal from "@/components/AppointmentModal";
 import { fetchDoctorDetailsAction } from "@/store/actions/commonActions";
+import { COLORS } from "@/app/colors";
+import Link from "next/link";
 
 const page = () => {
   const dispatch: any = useDispatch();
@@ -70,10 +73,11 @@ const page = () => {
     (state: any) => state?.vitalsData?.updateVitals
   );
   const doctorDetails = useSelector(
-    (state: any) => state?.paymentsData?.doctorDetails?.data?.data
+    (state: any) => state?.commonReducerData?.doctorDetails?.data?.data
   );
   console.log("doctorDetails", doctorDetails);
   useEffect(() => {
+    setLoading(true);
     fetchAppointments();
   }, [userDetails, appointmentReschedule]);
 
@@ -88,6 +92,7 @@ const page = () => {
     } catch (error) {
       console.error("Error fetching appointments:", error);
     }
+    setLoading(false);
   };
   useEffect(() => {
     if (upcommingAppointments?.status === 200) {
@@ -119,8 +124,6 @@ const page = () => {
     );
   };
   useEffect(() => {
-    console.log("videoConferenceDetails", videoConferenceDetails);
-
     if (videoConferenceDetails?.status === 200) {
       setLoading(false);
       router.push(`/meeting?${videoConferenceDetails?.data?.meetingInfo?.id}`);
@@ -152,15 +155,16 @@ const page = () => {
   };
   const handleRechedule = async (currentAppointment: any) => {
     setSelectedApppointment(currentAppointment);
-    console.log("currentAppointment", currentAppointment);
-    await dispatch(fetchDoctorDetailsAction(cancelAppointment?.doctorId));
+    await dispatch(fetchDoctorDetailsAction(currentAppointment?.doctorId));
     recheduleModalOnOpen();
   };
   const handleRecheduleAppointment = async (data: any) => {
     await dispatch(postRecheduleAppointmentAction(data));
+    recheduleModalOnClose();
   };
   useEffect(() => {
-    if (cancelAppointment?.data?.status === 200) {
+    if (cancelAppointment?.status === 200) {
+      setLoading(true);
       fetchAppointments();
     }
   }, [cancelAppointment]);
@@ -176,7 +180,7 @@ const page = () => {
         </TabList>
         <TabPanels>
           <TabPanel maxH={"100vh"} overflowY={"scroll"}>
-            {appointmentList?.length > 0 &&
+            {appointmentList?.length > 0 ? (
               appointmentList?.map((item: any) => {
                 return (
                   <AppointmentCard
@@ -187,7 +191,19 @@ const page = () => {
                     handleRechedule={handleRechedule}
                   />
                 );
-              })}
+              })
+            ) : (
+              <HStack>
+                <Text textAlign={"center"} color={COLORS.error} fontSize={"md"}>
+                  There are no upcomming appointments.
+                </Text>
+                <Link href={"/patient-home/bookappointment"}>
+                  <Text color={COLORS.primary} textDecoration={"underline"}>
+                    Book Appointment
+                  </Text>
+                </Link>
+              </HStack>
+            )}
           </TabPanel>
           <TabPanel maxH={"100vh"} overflowY={"scroll"}>
             {pastappointmentList?.length > 0 ? (

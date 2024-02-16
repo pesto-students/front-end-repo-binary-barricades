@@ -32,7 +32,7 @@ const AppointmentCard = ({
 }: any) => {
   const authContext: any = useContext(CTX);
   const { userType }: any = authContext;
-
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const joinConsultaionButtonEnabled = (
     appointmentDate: any,
     appointmentTime: string
@@ -52,7 +52,7 @@ const AppointmentCard = ({
     return now.isAfter(startTime) && now.isBefore(endTime);
   };
 
-  console.log("enabled", joinConsultaionButtonEnabled(data?.date, data?.time));
+  console.log("enabled", data);
 
   return (
     <>
@@ -92,7 +92,8 @@ const AppointmentCard = ({
                       fontWeight={"700"}
                       color={COLORS.secondary}
                     >
-                      Dr.Amit shah
+                      Dr.
+                      {`${data?.doctorDetails?.first_name} ${data?.doctorDetails?.last_name}`}
                     </Text>
                   )}
                   <Text fontSize={"sm"}>
@@ -134,7 +135,8 @@ const AppointmentCard = ({
                       fontWeight={"700"}
                       color={COLORS.secondary}
                     >
-                      Dr.Amit shah
+                      Dr.
+                      {`${data?.doctorDetails?.first_name} ${data?.doctorDetails?.last_name}`}
                     </Text>
                   )}
                   <Text fontSize={"sm"}>
@@ -173,7 +175,14 @@ const AppointmentCard = ({
                     )}
                   </>
                 ) : (
-                  <Text></Text>
+                  <Link
+                    color={COLORS.primary}
+                    fontWeight={"700"}
+                    mx={2}
+                    onClick={() => onOpen()}
+                  >
+                    Get Directions
+                  </Link>
                 )}
                 <Text
                   fontSize={"md"}
@@ -214,7 +223,7 @@ const AppointmentCard = ({
                         >
                           Cancel
                         </Button>
-                        <Link
+                        {/* <Link
                           color={COLORS.primary}
                           _hover={{ borderBottomWidth: 0 }}
                         >
@@ -225,12 +234,12 @@ const AppointmentCard = ({
                           >
                             Attach Reports
                           </Text>
-                        </Link>
+                        </Link> */}
                       </>
                     )}
                   </>
                 )}
-                {(data?.status !== "cancelled" || userType !== "doctor") && (
+                {/* {(data?.status !== "cancelled" || userType !== "doctor") && (
                   <Link
                     color={COLORS.primary}
                     _hover={{ borderBottomWidth: 0 }}
@@ -243,7 +252,7 @@ const AppointmentCard = ({
                       Chat with Dr. Amit
                     </Text>
                   </Link>
-                )}
+                )} */}
               </Stack>
             </Box>
           </Stack>
@@ -266,31 +275,32 @@ const AppointmentCard = ({
               )}
             </>
           ) : (
-            <Text></Text>
+            <Text display={{ base: "flex", sm: "none" }}>
+              <Link
+                color={COLORS.primary}
+                fontWeight={"700"}
+                mx={2}
+                onClick={() => onOpen()}
+              >
+                Get Directions
+              </Link>
+            </Text>
           )}
         </CardBody>
         {/* <CardFooter display={{ base: "block", sm: "none" }}> */}
 
         {/* </CardFooter> */}
       </Card>
-      {/* <Modal isOpen={isOpen} onClose={onClose}>
+      <Modal isOpen={isOpen} onClose={onClose}>
         <ModalOverlay />
         <ModalContent>
-          <ModalHeader>
-            Are you sure you want to cancel the Appoinment?
-          </ModalHeader>
+          <ModalHeader>Address</ModalHeader>
           <ModalBody>
-            <HStack>
-              <Button onClick={() => handleCancel(data?._id)}>
-                Yes, Cancel
-              </Button>
-              <Button onClick={onClose} variant={"outline"}>
-                No
-              </Button>
-            </HStack>
+            <Text>{data?.doctorDetails?.address}</Text>
+            <Text>{data?.doctorDetails?.city}</Text>
           </ModalBody>
         </ModalContent>
-      </Modal> */}
+      </Modal>
     </>
   );
 };

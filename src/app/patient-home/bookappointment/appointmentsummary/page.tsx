@@ -159,7 +159,9 @@ function page({ searchParams }: any) {
         color: COLORS.primary,
       },
     };
+    // @ts-ignore
     var rzp1 = new window.Razorpay(options);
+    // @ts-ignore
     rzp1.open();
   };
   useEffect(() => {

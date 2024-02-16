@@ -2,7 +2,7 @@
 import Charts from "@/components/Charts";
 import VitalsForm from "@/components/VitalsForm";
 import { CTX } from "@/context/context";
-import { getAllVitalsByPatient } from "@/store/slices/patients/vitalSlice";
+// import { getAllVitalsByPatient } from "@/store/slices/patients/vitalSlice";
 import {
   Avatar,
   Box,
@@ -16,7 +16,7 @@ import {
   useDisclosure,
 } from "@chakra-ui/react";
 import dayjs from "dayjs";
-import moment, { MomentInput } from "moment";
+import bmiImage from "../../../public/images/bmi.svg";
 import React, { useContext, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { COLORS } from "../colors";
@@ -25,13 +25,15 @@ import {
   getAllVitalsByPatientAction,
   updateVitalsAction,
 } from "@/store/actions/patient/vitalActions";
+import Image from "next/image";
 
 const page = () => {
   const dispatch: any = useDispatch();
   const authContext: any = useContext(CTX);
   const { userDetails }: any = authContext;
+  console.log("userDetails", userDetails);
+
   const { isOpen, onClose, onOpen } = useDisclosure();
-  const [vitals, setVitals]: any = useState([]);
   const upcommingAppointments = useSelector(
     (state: any) =>
       state?.appointmentData?.appointmentsByPatient?.data?.data
@@ -40,7 +42,9 @@ const page = () => {
   const updatedVitals = useSelector(
     (state: any) => state?.vitalsData?.updateVitals?.data
   );
-  const vitalsData = useSelector((state: any) => state?.vitalsData);
+  const vitalsData = useSelector(
+    (state: any) => state?.vitalsData?.allVitalsByPatient?.data
+  );
   console.log("upcommingAppointments", upcommingAppointments);
 
   useEffect(() => {
@@ -57,39 +61,32 @@ const page = () => {
     await dispatch(updateVitalsAction(payload));
   };
   const handleGetVitals = async () => {
-    const res = await dispatch(
-      getAllVitalsByPatient({ patientId: userDetails?._id })
+    await dispatch(
+      getAllVitalsByPatientAction({ patientId: userDetails?._id })
     );
-    if (res?.payload?.status === 200) {
-      const vitalsCopy = [res?.payload?.data];
-      const sortedVitals = vitalsCopy.sort(
-        (a, b) => moment(a.date).valueOf() - moment(b.date).valueOf()
-      );
-      const sortedVitalsCopy = [...sortedVitals];
-      setVitals(sortedVitalsCopy);
-    }
   };
 
   function extractVitalProperty(vitals: any, propertyName: any): any {
-    const flattenedVitals = vitals.flat();
+    if (vitals.length > 0) {
+      const filteredVitals = vitals?.filter(
+        (vital: { hasOwnProperty: (arg0: any) => any }) =>
+          vital.hasOwnProperty(propertyName)
+      );
 
-    const filteredVitals = flattenedVitals.filter(
-      (vital: { hasOwnProperty: (arg0: any) => any }) =>
-        vital.hasOwnProperty(propertyName)
-    );
-
-    const mappedVitals = filteredVitals.map((vital: { [x: string]: any }) => ({
-      [propertyName]: vital[propertyName],
-    }));
-
-    return mappedVitals;
+      const mappedVitals = filteredVitals?.map(
+        (vital: { [x: string]: any }) => ({
+          [propertyName]: vital[propertyName],
+        })
+      );
+      return mappedVitals;
+    }
   }
   const extractBloodPressureProperty = (
     vitals: any[],
     lb: string | number,
     hb: string | number
   ) => {
-    return vitals.flat().map((vital: { [x: string]: any }) => ({
+    return vitals?.flat()?.map((vital: { [x: string]: any }) => ({
       [lb]: vital[lb],
       [hb]: vital[hb],
     }));
@@ -97,7 +94,7 @@ const page = () => {
   const calculateBMI = (heightInInches: number, weightInKg: number) => {
     const heightInMeters = heightInInches * 0.0254;
 
-    const bmi = weightInKg / Math.pow(heightInMeters, 2);
+    const bmi = weightInKg / Math?.pow(heightInMeters, 2);
     let classification = "";
     if (bmi < 18.5) {
       classification = "Underweight";
@@ -124,10 +121,7 @@ const page = () => {
       console.error("Error fetching appointments:", error);
     }
   };
-  console.log(
-    'extractVitalProperty(vitals, "heartRate")',
-    extractVitalProperty(vitals, "heartRate")
-  );
+  console.log('extractVitalProperty(vitals, "heartRate")', vitalsData);
 
   return (
     <>
@@ -146,7 +140,63 @@ const page = () => {
           >
             Update Vitals
           </Link>
-          {vitals?.length > 0 && (
+          {vitalsData?.length > 0 ? (
+            <>
+              <SimpleGrid
+                gap={8}
+                mt={8}
+                h={"50vh"}
+                dir="row"
+                columns={{ sm: 1, md: 2 }}
+              >
+                <Charts
+                  chartData={extractVitalProperty(vitalsData, "heartRate")}
+                  chartType="heartRate"
+                  latestVital={
+                    extractVitalProperty(vitalsData, "heartRate")[
+                      extractVitalProperty(vitalsData, "heartRate").length - 1
+                    ]?.heartRate
+                  }
+                />
+                <Charts
+                  chartData={extractVitalProperty(vitalsData, "oxygenLevel")}
+                  latestVital={
+                    extractVitalProperty(vitalsData, "oxygenLevel")[
+                      extractVitalProperty(vitalsData, "oxygenLevel").length - 1
+                    ]?.oxygenLevel
+                  }
+                  chartType="oxygenLevel"
+                />
+                <Charts
+                  chartData={extractBloodPressureProperty(
+                    vitalsData,
+                    "lBp",
+                    "hBp"
+                  )}
+                  chartType="bp"
+                  latestVital={`${
+                    extractBloodPressureProperty(vitalsData, "lBp", "hBp")[
+                      extractBloodPressureProperty(vitalsData, "lBp", "hBp")
+                        .length - 1
+                    ]?.hBp
+                  }/${
+                    extractBloodPressureProperty(vitalsData, "lBp", "hBp")[
+                      extractVitalProperty(vitalsData, "heartRate").length - 1
+                    ]?.lBp
+                  }`}
+                />
+                <Charts
+                  chartData={extractVitalProperty(vitalsData, "bodyTemp")}
+                  chartType="bodyTemp"
+                  latestVital={
+                    extractVitalProperty(vitalsData, "bodyTemp")[
+                      extractVitalProperty(vitalsData, "bodyTemp").length - 1
+                    ]?.bodyTemp
+                  }
+                />
+              </SimpleGrid>
+            </>
+          ) : (
             <SimpleGrid
               gap={8}
               mt={8}
@@ -154,84 +204,50 @@ const page = () => {
               dir="row"
               columns={{ sm: 1, md: 2 }}
             >
-              <Charts
-                chartData={extractVitalProperty(vitals, "heartRate")}
-                chartType="heartRate"
-                latestVital={
-                  extractVitalProperty(vitals, "heartRate")[
-                    extractVitalProperty(vitals, "heartRate").length - 1
-                  ]?.heartRate
-                }
-              />
-              <Charts
-                chartData={extractVitalProperty(vitals, "oxygenLevel")}
-                latestVital={
-                  extractVitalProperty(vitals, "oxygenLevel")[
-                    extractVitalProperty(vitals, "oxygenLevel").length - 1
-                  ]?.oxygenLevel
-                }
-                chartType="oxygenLevel"
-              />
-              <Charts
-                chartData={extractBloodPressureProperty(vitals, "lBp", "hBp")}
-                chartType="bp"
-                latestVital={`${
-                  extractBloodPressureProperty(vitals, "lBp", "hBp")[
-                    extractBloodPressureProperty(vitals, "lBp", "hBp").length -
-                      1
-                  ]?.hBp
-                }/${
-                  extractBloodPressureProperty(vitals, "lBp", "hBp")[
-                    extractVitalProperty(vitals, "heartRate").length - 1
-                  ]?.lBp
-                }`}
-              />
-              <Charts
-                chartData={extractVitalProperty(vitals, "bodyTemp")}
-                chartType="bodyTemp"
-                latestVital={
-                  extractVitalProperty(vitals, "bodyTemp")[
-                    extractVitalProperty(vitals, "bodyTemp").length - 1
-                  ]?.bodyTemp
-                }
-              />
+              <Charts chartData={[]} chartType="heartRate" latestVital={[]} />
+              <Charts chartData={[]} latestVital={[]} />
+              <Charts chartData={[]} chartType="bp" latestVital={[]} />
+              <Charts chartData={[]} chartType="bodyTemp" latestVital={[]} />
             </SimpleGrid>
           )}
         </Box>
         <Box>
           <Box p={4} borderRadius={20} bg={"rgba(108, 99, 255, 0.3)"}>
             <HStack gap={8} alignItems={"start"}>
-              <Box>
-                <Box p={4} bg={"#F8DEBD"} mb={4} borderRadius={10}>
-                  <Text>
-                    Height {extractVitalProperty(vitals, "height")[0]?.height}{" "}
-                    inch
-                  </Text>
-                </Box>
-                <Box p={4} bg={"#F8DEBD"} borderRadius={10}>
-                  <Text>
-                    Weight {extractVitalProperty(vitals, "weight")[0]?.weight}{" "}
-                    kg
-                  </Text>
-                </Box>
-              </Box>
               <Box bg={COLORS.primary} p={4} color={"white"} borderRadius={10}>
                 <Text fontSize={"xl"}>Body Mass Index(BMI)</Text>
                 <Text fontSize={"lg"} my={2} fontWeight={"700"}>
-                  {calculateBMI(
-                    extractVitalProperty(vitals, "height")[0]?.height,
-                    extractVitalProperty(vitals, "weight")[0]?.weight
-                  ).bmi.toFixed(2)}
+                  {vitalsData?.length > 0 ? (
+                    calculateBMI(
+                      extractVitalProperty(vitalsData, "height")[0]?.height,
+                      extractVitalProperty(vitalsData, "weight")[0]?.weight
+                    ).bmi.toFixed(2)
+                  ) : (
+                    <>
+                      {calculateBMI(
+                        userDetails?.height,
+                        userDetails?.weight
+                      ).bmi.toFixed(2)}
+                    </>
+                  )}
                 </Text>
                 <Text fontSize={"md"}>
-                  {
-                    calculateBMI(
-                      extractVitalProperty(vitals, "height")[0]?.height,
-                      extractVitalProperty(vitals, "weight")[0]?.weight
-                    ).classification
-                  }
+                  {vitalsData?.length > 0
+                    ? calculateBMI(
+                        extractVitalProperty(vitalsData, "height")[0]?.height,
+                        extractVitalProperty(vitalsData, "weight")[0]?.weight
+                      ).classification
+                    : calculateBMI(userDetails?.height, userDetails?.weight)
+                        .classification}
                 </Text>
               </Box>
+              <Image
+                src={bmiImage}
+                alt="login-svg"
+                objectFit="cover"
+                width={150}
+                height={150}
+              />
             </HStack>
           </Box>
           <Box bg={"white"}>
@@ -244,8 +260,8 @@ const page = () => {
               Upcomming Appointments
             </Text>
             <Box maxH={"49vh"} overflowY={"scroll"}>
-              {upcommingAppointments?.length > 0 &&
-                upcommingAppointments?.map((items: any, index: any) => {
+              {upcommingAppointments?.length > 0 ? (
+                upcommingAppointments.map((items: any, index: any) => {
                   return (
                     <Stack
                       direction={"row"}
@@ -277,12 +293,26 @@ const page = () => {
                       </Text>
                     </Stack>
                   );
-                })}
+                })
+              ) : (
+                <Box
+                  bg={"#ff000050"}
+                  borderRadius={10}
+                  p={4}
+                  display={"inline-block"}
+                  mb={4}
+                >
+                  <Text color={COLORS.error} fontSize={"sm"}>
+                    There is no upcomming appointments.
+                  </Text>
+                </Box>
+              )}
             </Box>
           </Box>
         </Box>
       </SimpleGrid>
       <VitalsForm
+        fromDashboard
         isOpen={isOpen}
         onClose={onClose}
         handleUpdateVitals={(data: any) => handleUpdateVitals(data)}

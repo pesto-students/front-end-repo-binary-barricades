@@ -25,10 +25,15 @@ import { LoginUserState } from "@/store/interface/patients/authInterface";
 import { setCookie } from "cookies-next";
 import { CTX } from "@/context/context";
 import LoadingBackdrop from "@/components/Loader";
-import { patientLoginAction } from "@/store/actions/patient/authActions";
+import {
+  clearStateAction,
+  patientLoginAction,
+} from "@/store/actions/patient/authActions";
 // var CryptoJS = require("crypto-js");
-
+import { useToast } from "@chakra-ui/react";
 export default function Page() {
+  const toast = useToast();
+
   const router = useRouter();
   const dispatch: any = useDispatch();
   const authContext: any = useContext(CTX);
@@ -77,7 +82,14 @@ export default function Page() {
     // ).toString();
 
     dispatch(patientLoginAction({ formData: formData }));
+  };
+  useEffect(() => {
     if (authState?.user?.status === 200) {
+      toast({
+        title: "Successfull login",
+        status: "success",
+        duration: 3000,
+      });
       _startGlobalNavigation();
       setCookie("isAuthenticated", "true");
       setCookie("user_type", "patient");
@@ -85,13 +97,16 @@ export default function Page() {
       setCookie("access_token", authState?.user?.data?.token);
       _authenticate(authState?.user?.data, "patient");
       router.replace("/patient-home");
-
       setLoading(false);
     } else {
       setLoading(false);
     }
-  };
-
+  }, [authState, router]);
+  useEffect(() => {
+    return () => {
+      dispatch(clearStateAction());
+    };
+  }, []);
   return (
     <>
       {authState?.loading && <LoadingBackdrop />}
@@ -172,7 +187,10 @@ export default function Page() {
                 {formErrors.password}
               </FormErrorMessage>
             </FormControl>
-            <Link href={"/"} style={{ marginBottom: 8 }}>
+            <Link
+              href={"/auth/patient/forgot-password"}
+              style={{ marginBottom: 8 }}
+            >
               Forgot Password ?
             </Link>
             <Button variant={"solid"} onClick={handleSubmit}>

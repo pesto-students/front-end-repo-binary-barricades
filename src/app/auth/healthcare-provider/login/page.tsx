@@ -26,11 +26,16 @@ import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { LoginUserState } from "@/store/interface/patients/authInterface";
 import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons";
-import { doctorLogin } from "@/store/slices/healthcare/authSlice";
 import { CTX } from "@/context/context";
 import { setCookie } from "cookies-next";
+import {
+  clearStateAction,
+  doctorLoginAction,
+} from "@/store/actions/doctor/authActions";
 
 export default function Page() {
+  const toast = useToast();
+
   const router = useRouter();
   const dispatch: any = useDispatch();
   const [formData, setFormData] = useState<LoginUserState>({
@@ -39,9 +44,11 @@ export default function Page() {
   });
   const isLoading = useSelector((state: any) => state);
   console.log("isLoading", isLoading);
+  const doctorAuth = useSelector((state: any) => state?.doctorAuth);
 
   const authContext: any = useContext(CTX);
-  const { _authenticate } = authContext;
+  const { _authenticate, _startGlobalNavigation, _stopGlobalNavigation } =
+    authContext;
   const [show, setShow] = React.useState(false);
   const [formErrors, setFormErrors] = useState({
     email: "",
@@ -69,17 +76,29 @@ export default function Page() {
     if (!validateForm()) {
       return;
     }
-    const res: any = await dispatch(doctorLogin(formData)).unwrap();
-    console.log("res", res);
-
-    if (res?.status === 200) {
+    await dispatch(doctorLoginAction(formData));
+  };
+  useEffect(() => {
+    if (doctorAuth?.user?.status === 200) {
+      toast({
+        title: "Successfull login",
+        status: "success",
+        duration: 3000,
+      });
+      _startGlobalNavigation();
       router.replace("/doctor-dashboard");
       setCookie("isAuthenticated", "true");
       setCookie("user_type", "doctor");
-      setCookie("user_details", JSON.stringify(res?.data));
-      _authenticate(res?.data, "doctor");
+      setCookie("user_details", doctorAuth?.user?.data?.data);
+      setCookie("access_token", doctorAuth?.user?.data?.token);
+      _authenticate(doctorAuth?.user?.data, "doctor");
     }
-  };
+  }, [doctorAuth, router]);
+  useEffect(() => {
+    return () => {
+      dispatch(clearStateAction());
+    };
+  }, []);
   return (
     <SimpleGrid gap={8} h={"100vh"} dir="row" columns={{ sm: 1, md: 2 }} p={8}>
       <Box display={"flex"} justifyContent={"center"} alignItems={"center"}>
@@ -158,7 +177,10 @@ export default function Page() {
               {formErrors.password}
             </FormErrorMessage>
           </FormControl>
-          <Link href={"/"} style={{ marginBottom: 8 }}>
+          <Link
+            href={"/auth/healthcare-provider/forgot-password"}
+            style={{ marginBottom: 8 }}
+          >
             Forgot Password ?
           </Link>
           <Button variant={"solid"} onClick={handleSubmit}>

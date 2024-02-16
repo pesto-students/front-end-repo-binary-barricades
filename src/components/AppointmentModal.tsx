@@ -1,3 +1,4 @@
+"use client";
 import { COLORS } from "@/app/colors";
 import {
   Modal,
@@ -185,7 +186,8 @@ function AppointmentModal({
   const handleRecheduleAppointment = () => {
     const payload = {
       appointmentId: bookedData?.appointmentId,
-      date: bookedData?.date,
+      oldDate: bookedData?.date,
+      newDate: selectedDate,
       newTime: selectedTimeSlot,
       oldTime: bookedData?.time,
       doctorId: bookedData?.doctorId,

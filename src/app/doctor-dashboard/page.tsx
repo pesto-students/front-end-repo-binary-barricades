@@ -27,17 +27,17 @@ import dayjs from "dayjs";
 
 import doctorDashboard from "../../../public/images/doctorDashboard.svg";
 import { useDispatch, useSelector } from "react-redux";
-import { getMyUpcommingAppointments } from "@/store/slices/healthcare/appointmentSlice";
 import DoctorTimeSlots from "@/components/DoctorTimeSlots";
 import AppointmentDetails from "@/components/AppointmentDetails";
 import { useRouter } from "next/navigation";
-import { createAvailability } from "@/store/slices/healthcare/profileSlice";
 import moment from "moment";
 import LoadingBackdrop from "@/components/Loader";
 import {
   getDoctorsAvailabilityAction,
   getVideoConferenceDetailsAction,
 } from "@/store/actions/patient/appointmentActions";
+import { getMyUpcommingAppointmentAction } from "@/store/actions/doctor/appointmentActions";
+import { postCreateAvailabilty } from "@/store/actions/doctor/profileActions";
 function Page() {
   const router = useRouter();
   const dispatch: any = useDispatch();
@@ -45,7 +45,7 @@ function Page() {
   const currentDate = dayjs();
   const { isOpen, onOpen, onClose }: any = useDisclosure();
   const { userDetails, _meetingDetails }: any = authContext;
-  const [upcommingAppointments, setUpcommingAppointments] = useState([]);
+  // const [upcommingAppointments, setUpcommingAppointments] = useState([]);
   const [date, setDate]: any = useState();
   const [startTime, onChangeStartTime]: any = useState("09:00");
   const [endTime, onChangeEndTime]: any = useState("12:00");
@@ -62,14 +62,24 @@ function Page() {
   const doctorsAvailability = useSelector(
     (state: any) => state?.appointmentData?.doctorsAvailability?.data
   );
+  const createAvailabilty = useSelector(
+    (state: any) => state?.profileData?.createAvailability?.data
+  );
+  console.log("createAvailabilty", createAvailabilty);
+
+  const upcommingAppointments = useSelector(
+    (state: any) =>
+      state?.doctorAppointmentData?.myUpcomingAppointment?.data?.data
+  );
+  console.log("upcommingAppointments", upcommingAppointments);
+
   const handleGetUpcommingAppointment = async () => {
-    const res = await dispatch(
-      getMyUpcommingAppointments({
+    await dispatch(
+      getMyUpcommingAppointmentAction({
         doctorId: userDetails?._id,
         date: appointmentDate,
       })
     );
-    setUpcommingAppointments(res?.payload?.data);
     fetchTimeSlots();
   };
   useEffect(() => {
@@ -146,18 +156,18 @@ function Page() {
       alert("Duration can not be less or equal to zero");
       return;
     }
-    const res = await dispatch(createAvailability(payload));
-
-    if (res?.payload?.status === 200) {
+    await dispatch(postCreateAvailabilty(payload));
+  };
+  console.log("doctorsAvailability", doctorsAvailability);
+  useEffect(() => {
+    if (createAvailabilty?.status === 200) {
       setLoading(false);
       fetchTimeSlots();
     } else {
       setLoading(false);
       alert("Something went wrong");
     }
-  };
-  console.log("doctorsAvailability", doctorsAvailability);
-
+  }, [router, createAvailabilty]);
   return (
     <>
       {loading && <LoadingBackdrop />}
@@ -342,7 +352,7 @@ function Page() {
             <Tabs>
               <TabList>
                 <Tab w={"100%"}>Available</Tab>
-                <Tab w={"100%"}>Booked</Tab>
+                <Tab w={"100%"}>Update Slots</Tab>
               </TabList>
 
               <TabPanels>
