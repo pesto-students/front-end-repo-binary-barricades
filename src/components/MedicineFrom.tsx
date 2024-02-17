@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import {
   FormControl,
   FormLabel,
@@ -16,15 +16,30 @@ import { MdDeleteForever } from "react-icons/md";
 import { COLORS } from "@/app/colors";
 import { IoMdAddCircle } from "react-icons/io";
 import { CTX } from "@/context/context";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import dayjs from "dayjs";
-import { postAddMedicationAction } from "@/store/actions/doctor/appointmentActions";
+import {
+  clearState,
+  postAddMedicationAction,
+  postCompleteAppointmentAction,
+} from "@/store/actions/doctor/appointmentActions";
+import { useRouter } from "next/navigation";
+import LoadingBackdrop from "./Loader";
+import {
+  clearAppointmentDetails,
+  clearVideoConferenceDetails,
+} from "@/store/actions/patient/appointmentActions";
 
-const MedicinesForm = () => {
+const MedicinesForm = ({ doctor, data }: any) => {
   const dispatch: any = useDispatch();
   const authContext: any = useContext(CTX);
-  const { userDetails, isAuthenticated, appointmentId, patientId }: any =
-    authContext;
+  const {
+    userDetails,
+    isAuthenticated,
+    _startGlobalNavigation,
+    appointmentId,
+    patientId,
+  }: any = authContext;
   const [formData, setFormData] = useState({
     symptons: "",
     prescribedDate: "",
@@ -38,6 +53,15 @@ const MedicinesForm = () => {
       intakeType: "Before Meal",
     },
   ]);
+  const prescribedMedication = useSelector(
+    (state: any) => state?.doctorAppointmentData?.addMedication
+  );
+  const completeAppointmentData = useSelector(
+    (state: any) => state?.doctorAppointmentData?.completeAppointment
+  );
+  console.log("completeAppointment", prescribedMedication);
+
+  const router = useRouter();
   const handleInputChange = (e: { target: { name: any; value: any } }) => {
     const { name, value } = e.target;
     setFormData((prevData) => ({
@@ -66,8 +90,8 @@ const MedicinesForm = () => {
     const payload = {
       doctorId: userDetails?._id,
       doctorName: `${userDetails?.first_name} ${userDetails?.last_name}`,
-      appointmentId: appointmentId,
-      patientId: patientId,
+      appointmentId: doctor ? data?.appointmentId : appointmentId,
+      patientId: doctor ? data?.patientId : patientId,
       symptons: formData?.symptons,
       medication: medication,
       prescribedDate: dayjs().toString(),
@@ -75,10 +99,32 @@ const MedicinesForm = () => {
     };
     await dispatch(postAddMedicationAction(payload));
   };
+  useEffect(() => {
+    if (prescribedMedication?.data?.status === 200) {
+      completeAppointment();
+    }
+  }, [prescribedMedication]);
+  const completeAppointment = async () => {
+    await dispatch(
+      postCompleteAppointmentAction({ appointmentId: appointmentId })
+    );
+  };
+  useEffect(() => {
+    if (completeAppointmentData?.data?.status === 200) {
+      _startGlobalNavigation();
+      dispatch(clearState());
+      dispatch(clearVideoConferenceDetails());
+      dispatch(clearAppointmentDetails());
+      router.replace("/doctor-dashboard");
+    }
+  }, [completeAppointmentData]);
+  console.log("completeAppointmentData", completeAppointmentData);
+
   return (
     <VStack spacing={4} align="stretch" px={4}>
+      {prescribedMedication?.loading && <LoadingBackdrop />}
       <FormControl>
-        <FormLabel>Symptoms</FormLabel>
+        <FormLabel>Observations</FormLabel>
         <Textarea
           name="symptons"
           value={formData.symptons}
@@ -191,7 +237,7 @@ const MedicinesForm = () => {
         colorScheme="teal"
         onClick={() => handleSumbitMedicines()}
       >
-        Submit
+        Submit & Leave
       </Button>
     </VStack>
   );

@@ -103,17 +103,15 @@ function Page() {
     await dispatch(
       getVideoConferenceDetailsAction({ appointmentId: appointmentId })
     );
-    _meetingDetails({
-      appointmentId: appointmentId,
-      patientId: videoConferenceDetails?.payload?.data?.patientId,
-    });
   };
   useEffect(() => {
     if (videoConferenceDetails?.status === 200) {
+      _meetingDetails({
+        appointmentId: videoConferenceDetails?.data?.appointmentId,
+        patientId: videoConferenceDetails?.data?.patientId,
+      });
       setLoading(false);
-      router.push(
-        `/meeting?${videoConferenceDetails?.payload?.data?.meetingInfo?.id}`
-      );
+      router.push(`/meeting?${videoConferenceDetails?.data?.meetingInfo?.id}`);
     } else {
       setLoading(false);
     }
@@ -299,7 +297,10 @@ function Page() {
                     onClick={() => handleSelectedAppointment(items)}
                   >
                     <Avatar name={items?.patientInfo?.full_name} size={"sm"} />
-                    <Text fontWeight={index === 0 ? "700" : "500"}>
+                    <Text
+                      fontWeight={index === 0 ? "700" : "500"}
+                      textTransform={"capitalize"}
+                    >
                       {items?.patientInfo?.full_name}
                     </Text>
                     <Text fontWeight={index === 0 ? "700" : "500"}>
@@ -355,7 +356,7 @@ function Page() {
               </TabList>
 
               <TabPanels>
-                <TabPanel maxHeight={"20vh"} overflowY={"scroll"}>
+                <TabPanel maxHeight={"50vh"} overflowY={"scroll"}>
                   <DoctorTimeSlots
                     selectedDate={selectedDate}
                     doctorsAvailability={doctorsAvailability}

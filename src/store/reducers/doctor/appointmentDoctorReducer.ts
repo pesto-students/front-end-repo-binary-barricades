@@ -10,6 +10,11 @@ const initialState: any = {
     loading: false,
     error: null,
     data: null
+  },
+  completeAppointment: {
+    loading: false,
+    error: null,
+    data: null
   }
 };
 
@@ -68,6 +73,38 @@ export const appointmentDoctorReducer = (state = initialState, action: any) => {
           error: true,
           data: null
         }
+      };
+
+    case AppointmentActionTypes.DOCTOR_COMPELTE_APPOINTMENT_REQUEST:
+      return {
+        ...state,
+        completeAppointment: {
+          loading: false,
+          error: null,
+          data: null
+        }
+      };
+    case AppointmentActionTypes.DOCTOR_COMPELTE_APPOINTMENT_SUCCESS:
+      return {
+        ...state,
+        completeAppointment: {
+          loading: false,
+          error: true,
+          data: action.payload
+        }
+      };
+    case AppointmentActionTypes.DOCTOR_COMPELTE_APPOINTMENT_FAILURE:
+      return {
+        ...state,
+        completeAppointment: {
+          loading: false,
+          error: true,
+          data: null
+        }
+      };
+    case AppointmentActionTypes.CLEAR_STATE:
+      return {
+        ...initialState,
       };
     default:
       return state;
